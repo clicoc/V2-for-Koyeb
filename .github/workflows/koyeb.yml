@@ -1,30 +1,31 @@
-name: "Build and push images"
+name: "Build and push hf images"
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - hf-space   # 只有在这个分支代码变动时才打包
 
 jobs:
   Building:
     runs-on: ubuntu-latest
-    name: "Build V2ray images"
+    name: "Build V2ray HF images"
     permissions:
       contents: read
       packages: write
 
     steps:
-      # 升级到 v4，支持最新 Node 环境
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: hf-space # 强制锁定切出 hf-space 分支的代码来编译
 
-      # 升级到 v3
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # 升级到 v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 升级到 v3
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -32,11 +33,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 直接在配置里写死你的包名（全小写），完全避免变量拼接报错
       - name: Build and push images to GHCR
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: linux/amd64
-          tags: ghcr.io/clicoc/v2-for-koyeb:latest
+          tags: ghcr.io/clicoc/v2-for-koyeb:hf-latest # 独立标签，不冲突

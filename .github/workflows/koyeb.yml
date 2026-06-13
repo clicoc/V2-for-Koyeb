@@ -5,29 +5,42 @@ on:
 
 jobs:
   Building:
-      runs-on: ubuntu-latest
-      name: "Build V2ray images"
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        DOCKERHUB_REPOSITORY: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest
+    runs-on: ubuntu-latest
+    name: "Build V2ray images"
+    # 【改动 1】必须添加这部分权限，否则没有权限推送到 GHCR
+    permissions:
+      contents: read
+      packages: write
 
-      steps:
+    steps:
+      # 【必须加上】原脚本漏了拉取源码的步骤，不加这步找不到本地的 Dockerfile
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2.2.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2.10.0
 
-      - name: Login to DockerHub
+      # 【改动 2】修改为登录到 GitHub 自己的镜像仓库 (GHCR)
+      - name: Login to GHCR
         uses: docker/login-action@v2.2.0
         with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}          # 自动获取你的用户名 clicoc
+          password: ${{ secrets.GITHUB_TOKEN }}  # GitHub 自动生成的临时令牌，免配置
 
-      - name: Build and push images to Docker hub
+      # 【改动 3】将镜像名转换为规范的全小写，并存入环境变量
+      - name: Convert image name to lowercase
+        run: |
+          echo "GHCR_REPOSITORY=ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
+
+      # 【改动 4】编译并推送到 GHCR
+      - name: Build and push images to GHCR
         uses: docker/build-push-action@v4.1.1
         with:
+          context: .
           push: true
           platforms: linux/amd64
-          tags: ${{ env.DOCKERHUB_REPOSITORY }}
+          tags: ${{ env.GHCR_REPOSITORY }}:latest

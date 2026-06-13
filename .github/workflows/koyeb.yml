@@ -7,40 +7,36 @@ jobs:
   Building:
     runs-on: ubuntu-latest
     name: "Build V2ray images"
-    # 【改动 1】必须添加这部分权限，否则没有权限推送到GHCR
     permissions:
       contents: read
       packages: write
 
     steps:
-      # 【必须加上】原脚本漏了拉取源码的步骤，不加这步找不到本地的 Dockerfile
+      # 升级到 v4，支持最新 Node 环境
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # 升级到 v3
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2.2.0
+        uses: docker/setup-qemu-action@v3
 
+      # 升级到 v3
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2.10.0
+        uses: docker/setup-buildx-action@v3
 
-      # 【改动 2】修改为登录到 GitHub 自己的镜像仓库 (GHCR)
+      # 升级到 v3
       - name: Login to GHCR
-        uses: docker/login-action@v2.2.0
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}          # 自动获取你的用户名 clicoc
-          password: ${{ secrets.GITHUB_TOKEN }}  # GitHub 自动生成的临时令牌，免配置
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 【改动 3】将镜像名转换为规范的全小写，并存入环境变量
-      - name: Convert image name to lowercase
-        run: |
-          echo "GHCR_REPOSITORY=ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
-
-      # 【改动 4】编译并推送到 GHCR
+      # 直接在配置里写死你的包名（全小写），完全避免变量拼接报错
       - name: Build and push images to GHCR
-        uses: docker/build-push-action@v4.1.1
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: linux/amd64
-          tags: ${{ env.GHCR_REPOSITORY }}:latest
+          tags: ghcr.io/clicoc/v2-for-koyeb:latest

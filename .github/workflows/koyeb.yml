@@ -7,7 +7,7 @@ jobs:
   Building:
     runs-on: ubuntu-latest
     name: "Build V2ray images"
-    # 【改动 1】必须添加这部分权限，否则没有权限推送到 GHCR
+    # 【改动 1】必须添加这部分权限，否则没有权限推送到GHCR
     permissions:
       contents: read
       packages: write
